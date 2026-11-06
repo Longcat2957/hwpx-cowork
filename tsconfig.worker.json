@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "target": "ES2023",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "types": ["node"],
+        "strict": true,
+        "skipLibCheck": true,
+        "verbatimModuleSyntax": true,
+        "erasableSyntaxOnly": true,
+        "allowImportingTsExtensions": true,
+        "noEmit": true,
+        "paths": {
+            "#lib": ["./src/lib/index.ts"],
+            "#lib/*": ["./src/lib/*"]
+        }
+    },
+    "include": [
+        "worker/**/*.ts",
+        "scripts/**/*.ts",
+        "src/lib/server/**/*.ts",
+        "src/lib/contracts/**/*.ts"
+    ],
+    "exclude": ["node_modules", "dist"]
+}

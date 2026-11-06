@@ -2,7 +2,7 @@
 
 작성일: 2026년 11월 6일
 
-[승인된 스캐폴드](architecture.md)를 구현하기 위한 두 번째 단계의 계획이다. 이 문서의 단계 번호는 앞으로 코드를 작성할 순서를 뜻한다. 현재 완료한 것은 스캐폴드 승인과 계획 문서화이며, 아래 기능은 아직 구현하지 않았다.
+[승인된 스캐폴드](architecture.md)를 구현하기 위한 세부 계획이다. 이 문서의 단계 번호는 앞으로 코드를 작성할 순서를 뜻한다. 현재는 의존성 설치와 빈 파일 스캐폴드, 개발·빌드 도구 설정을 준비했으며 아래 서비스 기능은 아직 구현하지 않았다.
 
 직접 작성하거나 수정하는 코드·설정·코드 예제는 반드시 **공백 4개**로 들여쓴다. 기존 SvelteKit 프로젝트를 확장하며 웹 서버와 Worker를 같은 저장소에서 관리한다.
 
@@ -10,7 +10,24 @@
 
 rhwp의 웹 편집과 MCP 문서 조작을 연결하고, 이 서비스에 필요한 사용자·문서·브랜치·버전·작업 관리 코드를 작성한다. 웹 서버가 요청을 받고 Worker가 실행하는 구조를 통해 브라우저 종료와 AI 작업의 수명을 분리한다.
 
-현재는 요구사항, 스캐폴드, 단계별 계획을 정리했으며 애플리케이션 기능 구현은 시작 전이다. `AGENTS.md`와 `.editorconfig`에 공백 4개 규칙을 기록했고, `.gitignore`와 `.gitattributes`에 소스 관리 규칙을 마련했다. `main` 브랜치로 Git 초기화와 저장소 로컬 줄바꿈·공백 검사 설정을 완료했으며, 공개 저장소 [Longcat2957/hwpx-cowork](https://github.com/Longcat2957/hwpx-cowork)를 `origin`으로 연결했다. 웹 서비스의 실제 운영 배포는 10단계의 목표다. 관련 명령은 [설정 문서](git.md)에 정리한다.
+요구사항과 단계별 계획을 유지하면서 애플리케이션·Worker·운영 구조용 빈 파일 81개를 만들었다. 명시된 페이지와 API 경로를 마련했으며, 디렉터리만 정한 영역은 빈 `.gitkeep`으로 보존한다. 사용자 요청에 따라 서비스 구현 파일은 0바이트를 유지한다. 기본 경로(`/`)와 추가 페이지는 비어 있고 API 처리·DB 스키마·Worker 실행 로직도 아직 없다.
+
+shadcn-svelte CLI의 `add --all`로 UI 63개 묶음을 설치하고 공식 Lucide Svelte 패키지 `@lucide/svelte`를 추가했다. SvelteKit 3를 유지하면서 Node 어댑터 6, Harness·SDK `0.2.2-rc.1`, rhwp 편집기 `0.8.7`, Drizzle ORM `0.45.4`, `better-sqlite3` `13.0.3`, Zod `4.6.7`을 준비했다. Harness 실행 조건에 맞춰 Node.js 최소 버전은 24.9다. 설치 버전 고정과 실제 연동 검증은 구분한다.
+
+| 구분 | 현재 상태 | 남은 작업 |
+| --- | --- | --- |
+| 개발·빌드 기반 | 웹 Node 어댑터, Worker 별도 빌드·타입 검사 통과 | 실제 Worker 수명 관리 구현 |
+| 코드 스타일 | Prettier 공백 4개 설정과 포맷 명령 준비 | 이후 구현에서도 같은 규칙 유지 |
+| 환경·상태 확인 | 환경 변수 예시와 빈 서버 설정·health 파일 준비 | 필수 설정 읽기·검증, 상태 확인 응답 구현 |
+| UI·서비스 | UI 라이브러리 설치, 서비스 파일과 경로는 빈 상태 | 인증·문서·버전·AI 기능 구현 |
+| DB·테스트 | Drizzle·Vitest·Playwright 설정 준비 | 스키마·마이그레이션·검증 사례 작성 |
+| 핵심 연동 | Harness·rhwp 의존성 설치 | OpenRouter·MCP·문서 저장·ARM64 통합 검증 |
+
+이 상태는 **1단계 설정 준비**이며 단계 완료를 뜻하지 않는다. 빈 Worker를 실행하면 할 일 없이 종료하며 개발 watch 모드만 변경을 기다린다. 테스트 디렉터리가 비어 있으므로 테스트 통과를 주장하지 않는다. `data/`와 SQLite 파일은 이후 실행 코드가 생성하며 가짜 DB 파일은 만들지 않았다.
+
+**스캐폴드 검증 결과:** `pnpm lint`, `pnpm check`, `pnpm build`, `pnpm install --frozen-lockfile`, `pnpm peers check`를 확인했다. Linux ARM64·Node.js 24.19에서 SQLite 메모리 DB 쿼리와 Harness SDK·rhwp 편집기 모듈 로딩이 성공했다. 빈 `(app)/+layout.svelte`는 자식 렌더링 누락 경고를 발생시키며 화면 구현 때 연결한다. 라즈베리파이 실기기·OpenRouter·MCP·문서 저장 검증 및 서비스 테스트는 수행 전이다.
+
+`AGENTS.md`와 `.editorconfig`의 공백 4개 규칙, `.gitignore`와 `.gitattributes`의 소스 관리 규칙을 유지한다. `main` 브랜치로 Git 초기화와 저장소 로컬 줄바꿈·공백 검사 설정을 완료했으며, 공개 저장소 [Longcat2957/hwpx-cowork](https://github.com/Longcat2957/hwpx-cowork)를 `origin`으로 연결했다. 웹 서비스의 실제 운영 배포는 10단계의 목표다. 관련 명령은 [설정 문서](git.md)에 정리한다.
 
 ## 사용자 흐름과 구현 단계
 
@@ -48,11 +65,16 @@ rhwp의 웹 편집과 MCP 문서 조작을 연결하고, 이 서비스에 필요
 
 **작성·수정할 파일**
 
-- `package.json`, `vite.config.ts`, `tsconfig.worker.json`: 웹·Worker 개발 실행, 빌드, 타입 검사 명령.
+- `package.json`, `vite.config.ts`, `vite.worker.config.ts`, `tsconfig.worker.json`: 웹·Worker 개발 실행, 빌드, 타입 검사 명령.
 - `.env.example`, `.gitignore`, `src/lib/server/config/`: 데이터 루트, DB 경로, 서버 비밀 설정, 작업 제한 설정.
 - `worker/index.ts`, `worker/dispatcher.ts`: 시작·종료 처리와 작업 대기 루프의 기반.
 - `src/routes/api/health/+server.ts`: 서비스 상태 확인.
-- `.editorconfig`와 포맷터 설정: 탭 없이 공백 4개를 적용하고 확인할 명령.
+- `.editorconfig`, `.prettierrc.json`, `.prettierignore`: 탭 없이 공백 4개를 적용하고 확인할 명령. 자동 생성되는 lockfile은 포맷 검사에서 제외한다.
+- `vitest.config.ts`, `playwright.config.ts`: 단위·통합 검증과 브라우저 검증의 실행 설정. 빈 테스트 디렉터리와 검증 완료를 구분한다.
+
+**현재 준비한 설정:** `dev:web`·`dev:worker`, `build:web`·`build:worker`, `start:web`·`start:worker`, `check:web`·`check:worker`와 통합 빌드·검사 명령을 마련했다. 웹 출력은 `build/`, Worker 출력은 `dist/worker/`다. `format`·`lint`는 Prettier를 사용하고, `test:unit`·`test:e2e`는 각각 Vitest·Playwright를 사용한다. Drizzle의 `db:generate`·`db:migrate` 명령은 스키마를 구현한 뒤 사용한다. 설치와 설정만으로 아래 완료 기준이 충족되지는 않는다.
+
+현재 Node.js 바이너리가 TypeScript 지원 없이 빌드되어 `.ts` 직접 실행이 불가능하므로 Worker 개발 명령은 `tsx watch`를 사용한다. 운영 실행은 Vite가 만든 JavaScript를 Node로 실행한다.
 
 이미 마련한 문서와 Git 제외 규칙을 유지하면서 실행 설정을 추가한다. 소스 저장소의 브랜치는 `main`을 기준으로 하고, 서비스 내부 문서의 사용자별 브랜치는 3단계의 DB·파일 모델로 구현한다.
 
@@ -274,4 +296,4 @@ systemd로 웹과 Worker를 각각 관리하고 Caddy에서 HTTPS와 외부 접�
 | 보관·복구 | 정리 시 참조 보호, 백업을 별도 경로에 복원하고 문서 열기 |
 | 실제 환경 | 라즈베리파이 ARM64 실행, PC·모바일 주요 흐름, 공백 4개 코드 스타일 |
 
-첫 코드 작성 작업은 **1단계 실행 기반과 공통 설정**이다. 이어서 2단계에서 문서 편집과 AI 연동의 실제 제약을 확인한 뒤 DB·서비스·화면을 차례로 완성한다.
+다음 코드 작성 작업은 **1단계 실행 기반과 공통 설정의 남은 구현**이다. 설정 읽기·검증, 상태 확인 API, Worker 시작·종료와 대기 루프를 구현하고 완료 기준을 확인한다. 이어서 2단계에서 문서 편집과 AI 연동의 실제 제약을 확인한 뒤 DB·서비스·화면을 차례로 완성한다.

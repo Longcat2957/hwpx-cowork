@@ -17,7 +17,11 @@ SvelteKit 웹 서버는 화면과 API를 제공하고, 별도 Worker가 SQLite�
 
 ## 현재 상태와 구현 순서
 
-승인된 스캐폴드와 세부 구현 계획을 문서화했습니다. 현재 코드는 SvelteKit 3, Svelte 5, TypeScript, Tailwind CSS 4, shadcn-svelte 기반의 빈 프로젝트이며 기본 경로(`/`)는 빈 페이지입니다. 위 기능은 구현할 목표입니다.
+승인된 구조에 따라 의존성 설치와 빈 파일 스캐폴드를 준비했습니다. SvelteKit 3·Svelte 5·TypeScript·Tailwind CSS 4를 유지하며, shadcn-svelte 전체 추가 명령으로 설치한 UI 컴포넌트 63개 묶음과 공식 Lucide Svelte 패키지 `@lucide/svelte`를 사용할 수 있습니다.
+
+애플리케이션·Worker·운영 구조용 빈 파일 81개를 추가했습니다. 페이지, API, 인증, DB, 문서·버전 서비스, Worker와 배포 파일은 빈 상태이며, 디렉터리만 정의된 곳에는 빈 `.gitkeep`을 두었습니다. 기본 경로(`/`)도 빈 페이지입니다. 설치된 UI 코드와 개발·빌드 설정을 제외한 서비스 기능은 아직 구현하지 않았습니다.
+
+웹의 Node 어댑터, Worker 별도 빌드, 타입 검사, 공백 4개 포맷터, Vitest·Playwright·Drizzle 설정을 준비했습니다. 이는 1단계의 설정 준비 상태이며, 필수 환경 설정 검증·상태 확인 API·Worker 시작과 종료 및 대기 루프가 남아 있으므로 1단계 완료를 뜻하지 않습니다. `.env.example`에는 설정 예시만 있고 이를 읽고 검증하는 서비스 코드는 아직 없습니다. 테스트와 DB 스키마도 비어 있습니다.
 
 구현은 실행 기반 → rhwp·Harness·OpenRouter 실제 연동 검증 → DB·파일·버전 → 인증 → 직접 편집 → AI 대화 편집 → 버전 트리·비교·복원 → 새 문서·선택 영역·참고 자료 → 모바일 → 운영·백업 순서로 진행합니다.
 
@@ -34,32 +38,72 @@ SvelteKit 웹 서버는 화면과 API를 제공하고, 별도 Worker가 SQLite�
 
 ## 실행
 
-Node.js 22.17 이상과 pnpm이 필요합니다.
+DeepSeek Harness의 실행 조건에 맞춰 Node.js 24.9 이상과 [package.json](package.json)에 지정한 pnpm이 필요합니다.
 
 ```sh
 pnpm install
-pnpm dev
+pnpm dev:web
 ```
 
-## 검증 및 빌드
+별도 터미널에서 Worker 개발 명령을 사용할 수 있습니다.
 
 ```sh
+pnpm dev:worker
+```
+
+현재 [worker/index.ts](worker/index.ts)는 빈 파일입니다. Worker 실행은 할 일 없이 끝나며 개발 명령의 watch 모드만 변경을 기다립니다. 작업 처리나 상시 대기 기능은 아직 없습니다. `data/`와 SQLite 파일은 이후 실행 코드가 생성할 운영 데이터이며, 스캐폴드에 가짜 DB 파일을 만들지 않았습니다.
+
+Worker 개발 실행에는 `tsx`를 사용합니다. 현재 설치된 Node.js 24.19 바이너리는 TypeScript 지원 없이 빌드되어 있어 `.ts` 파일 직접 실행을 지원하지 않습니다. 운영 실행은 Vite가 빌드한 JavaScript를 사용합니다.
+
+## 검사·빌드·테스트 명령
+
+```sh
+pnpm lint
 pnpm check
 pnpm build
-pnpm preview
 ```
 
-## UI 컴포넌트 추가
-
-shadcn-svelte 설정은 `components.json`, 테마는 `src/app.css`에 있습니다.
-컴포넌트는 필요할 때 추가합니다.
+`pnpm check`는 웹과 Worker의 타입 검사, `pnpm build`는 웹과 Worker의 빌드를 묶습니다. 각각 `check:web`, `check:worker`, `build:web`, `build:worker`로 나누어 실행할 수 있습니다. 웹은 Node 어댑터로 [build/](build/)에, Worker는 [vite.worker.config.ts](vite.worker.config.ts)를 통해 [dist/worker/](dist/worker/)에 출력하도록 구성했습니다. 빌드 후 실행 명령은 다음과 같습니다.
 
 ```sh
-pnpm exec shadcn-svelte add button
+pnpm start:web
+pnpm start:worker
 ```
 
-SvelteKit 3의 `#lib` 경로 별칭을 사용하며 설정은 `vite.config.ts`에 있습니다.
-배포 어댑터는 기본 `adapter-auto`로 구성되어 있습니다.
+포맷 수정은 `pnpm format`, 공백 4개 규칙을 포함한 포맷 검사는 `pnpm lint`를 사용합니다. 자동 생성되는 [pnpm-lock.yaml](pnpm-lock.yaml)은 Prettier 검사에서 제외합니다.
+
+```sh
+pnpm test:unit
+pnpm test:e2e
+```
+
+위 명령은 각각 Vitest와 Playwright용입니다. 현재 [tests/](tests/)에는 빈 디렉터리 보존 파일만 있으며 검증 사례는 아직 작성하지 않았습니다. 테스트 설정 준비를 서비스 동작 검증 완료로 보지 않습니다.
+
+Drizzle 명령 `pnpm db:generate`, `pnpm db:migrate`도 준비했지만 [schema/](src/lib/server/db/schema/)와 [migrations/](migrations/)가 비어 있으므로 DB 구현 단계에서 스키마를 작성한 뒤 사용합니다.
+
+스캐폴드 검증에서 `pnpm lint`, `pnpm check`, 웹·Worker 빌드와 lockfile 고정 설치를 확인했습니다. 현재 Linux ARM64·Node.js 24.19 환경에서 SQLite 메모리 DB 쿼리와 Harness SDK·rhwp 편집기 모듈 로딩도 확인했습니다. 라즈베리파이 실기기 및 문서·AI 연동 검증은 아직 수행하지 않았습니다. 빈 [(app)/+layout.svelte](src/routes/(app)/+layout.svelte) 때문에 하위 화면을 렌더링하지 않는다는 SvelteKit 경고가 표시됩니다. 화면 구현 단계에서 자식 렌더링을 연결합니다.
+
+## 의존성과 UI 컴포넌트
+
+| 용도 | 설치 버전 |
+| --- | --- |
+| 웹 Node 어댑터 | `@sveltejs/adapter-node` 6.0.1 |
+| DeepSeek Harness와 SDK | `@deepseek-ai/dsh`, `@deepseek-ai/dsh-sdk-client` 0.2.2-rc.1 |
+| rhwp 웹 편집기 | `@rhwp/editor` 0.8.7 |
+| SQLite·ORM | `better-sqlite3` 13.0.3, `drizzle-orm` 0.45.4 |
+| 입력 검증 | `zod` 4.6.7 |
+
+Harness와 SDK는 같은 명시 버전으로 맞췄습니다. 이 버전 고정은 설치 재현성을 위한 것으로, 문서 편집·OpenRouter·MCP·ARM64 통합 호환성은 2단계에서 확인합니다. 아직 모델 요청을 실행하는 코드는 없으며 모든 LLM 호출에 `deepseek/deepseek-v4.1-flash-1017`을 적용하는 정책도 구현 대상입니다.
+
+[pnpm-workspace.yaml](pnpm-workspace.yaml)에는 필요한 설치 스크립트 허용 목록과 의존성 호환 버전을 기록했습니다. OpenTelemetry API는 Harness와 관련 패키지의 공통 범위인 `1.9.1`을 사용하고, UI 내부의 Runed `0.35.1`·`0.37.1` 참조는 SvelteKit 3를 지원하는 `0.38.0`으로 맞췄습니다. `pnpm peers check`에서 충돌이 없음을 확인했습니다.
+
+shadcn-svelte 설정은 [components.json](components.json), 테마는 [src/app.css](src/app.css), 설치된 63개 UI 묶음은 [src/lib/components/ui/](src/lib/components/ui/)에 있습니다. 전체 설치에 사용한 명령은 다음과 같습니다.
+
+```sh
+pnpm exec shadcn-svelte add --all
+```
+
+아이콘은 `@lucide/svelte`에서 가져옵니다. SvelteKit 3의 `#lib` 경로 별칭을 사용하며 웹과 Worker 설정은 [vite.config.ts](vite.config.ts), [vite.worker.config.ts](vite.worker.config.ts)에 있습니다.
 
 ## 소스 관리
 

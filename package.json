@@ -1,39 +1,81 @@
 {
-  "name": "deepet-hwpx-cowork",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "packageManager": "pnpm@12.18.0",
-  "engines": {
-    "node": ">=22.17.0"
-  },
-  "imports": {
-    "#lib": "./src/lib/index.ts",
-    "#lib/*": "./src/lib/*"
-  },
-  "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
-    "prepare": "svelte-kit sync",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
-  },
-  "devDependencies": {
-    "@lucide/svelte": "latest",
-    "@sveltejs/adapter-auto": "^8.0.0",
-    "@sveltejs/kit": "3.1.1",
-    "@sveltejs/vite-plugin-svelte": "^7.3.1",
-    "@tailwindcss/vite": "^4.1.0",
-    "@types/node": "^24.0.0",
-    "cn": "^0.3.0",
-    "shadcn-svelte": "^1.7.2",
-    "svelte": "^5.57.1",
-    "svelte-check": "^4.7.8",
-    "tailwind-variants": "^3.0.0",
-    "tailwindcss": "^4.1.0",
-    "tw-animate-css": "^1.3.0",
-    "typescript": "~6.0.3",
-    "vite": "^8.0.12"
-  }
+    "name": "deepet-hwpx-cowork",
+    "version": "0.0.0",
+    "private": true,
+    "type": "module",
+    "packageManager": "pnpm@12.18.0",
+    "engines": {
+        "node": ">=24.9.0"
+    },
+    "imports": {
+        "#lib": "./src/lib/index.ts",
+        "#lib/*": "./src/lib/*"
+    },
+    "scripts": {
+        "dev": "vite dev",
+        "dev:web": "vite dev",
+        "dev:worker": "tsx watch --tsconfig tsconfig.worker.json worker/index.ts",
+        "build": "pnpm build:web && pnpm build:worker",
+        "build:web": "vite build",
+        "build:worker": "vite build --config vite.worker.config.ts",
+        "start:web": "node build/index.js",
+        "start:worker": "node dist/worker/index.js",
+        "preview": "vite preview",
+        "prepare": "svelte-kit sync",
+        "check": "pnpm check:web && pnpm check:worker",
+        "check:web": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+        "check:worker": "tsc --project tsconfig.worker.json",
+        "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+        "format": "prettier --write \"**/*.{js,ts,svelte,json,css,html,yaml,yml}\"",
+        "format:check": "prettier --check \"**/*.{js,ts,svelte,json,css,html,yaml,yml}\"",
+        "lint": "pnpm format:check",
+        "test:unit": "vitest run",
+        "test:e2e": "playwright test",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate"
+    },
+    "devDependencies": {
+        "@playwright/test": "1.64.1",
+        "@sveltejs/adapter-node": "6.0.1",
+        "@sveltejs/kit": "3.1.1",
+        "@sveltejs/vite-plugin-svelte": "^7.3.1",
+        "@tailwindcss/vite": "^4.1.0",
+        "@types/better-sqlite3": "9.6.0",
+        "@types/node": "^24.0.0",
+        "drizzle-kit": "0.31.11",
+        "prettier": "3.9.10",
+        "prettier-plugin-svelte": "4.1.1",
+        "shadcn-svelte": "1.8.0",
+        "svelte": "^5.57.1",
+        "svelte-check": "^4.7.8",
+        "tailwindcss": "^4.1.0",
+        "tsx": "4.23.15",
+        "tw-animate-css": "^1.3.0",
+        "typescript": "~6.0.3",
+        "vite": "^8.0.12",
+        "vitest": "5.1.0"
+    },
+    "dependencies": {
+        "@deepseek-ai/dsh": "0.2.2-rc.1",
+        "@deepseek-ai/dsh-sdk-client": "0.2.2-rc.1",
+        "@internationalized/date": "^3.12.0",
+        "@lucide/svelte": "^1.70.0",
+        "@rhwp/editor": "0.8.7",
+        "@shadcn-svelte/primitives": "^0.0.1",
+        "better-sqlite3": "13.0.3",
+        "bits-ui": "^2.20.0",
+        "cn": "^0.5.2",
+        "drizzle-orm": "0.45.4",
+        "embla-carousel-svelte": "^8.6.0",
+        "formsnap": "^2.1.0",
+        "layerchart": "^2.0.0",
+        "mode-watcher": "^1.1.0",
+        "paneforge": "^1.0.2",
+        "shiki": "^3.20.0",
+        "svelte-sonner": "^1.2.0",
+        "sveltekit-superforms": "^3.0.0",
+        "tailwind-variants": "^3.3.0",
+        "vaul-svelte": "^1.0.0-next.7",
+        "zod": "4.6.7"
+    }
 }

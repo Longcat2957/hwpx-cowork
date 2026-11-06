@@ -8,6 +8,8 @@ AI 실행은 DeepSeek Harness가 담당하고, 모델 호출은 서버의 OpenRo
 
 이 문서의 스캐폴드는 승인된 목표 구조다. 실제 코드 작성 순서와 완료 기준은 [세부 코드 작성 계획](implementation-plan.md)에 정리한다.
 
+현재는 필요한 의존성, 웹·Worker 개발 및 빌드 설정, 공백 4개 포맷터와 테스트 도구 설정을 준비했다. shadcn-svelte UI 63개 묶음과 `@lucide/svelte`를 설치했으며, 애플리케이션·Worker·운영 구조용 파일 81개는 모두 빈 파일로 만들었다. 아래 인증·문서 편집·AI 작업·DB·운영 동작은 구현 목표이며 아직 동작하지 않는다. 페이지와 API 파일도 비어 있고, 빈 Worker는 작업을 수행하지 않는다.
+
 ## 서비스가 담당하는 범위
 
 rhwp의 문서 편집 기능을 웹에 연결하고, 구성원이 직접 수정하거나 AI에 지시하는 화면을 제공한다. 이 프로젝트에서 개발할 중심 기능은 사내 사용자 관리, 문서 저장과 공유, 사용자별 브랜치, 세션 복원, AI 작업 실행과 결과 반영이다.
@@ -54,8 +56,10 @@ rhwp의 문서 편집 기능을 웹에 연결하고, 구성원이 직접 수정�
 | 영역 | 구성 |
 | --- | --- |
 | 웹 화면과 API | 기존 SvelteKit 3·Svelte 5·TypeScript 유지 |
-| UI | 기존 Tailwind CSS 4·shadcn-svelte 활용 |
-| 웹 배포 | SvelteKit Node 어댑터 |
+| UI | Tailwind CSS 4·shadcn-svelte 63개 UI 묶음·`@lucide/svelte` |
+| Node 실행 환경 | Node.js 24.9 이상, DeepSeek Harness 실행 조건 반영 |
+| Worker 개발·빌드 | 개발은 `tsx watch`, 운영은 Vite SSR 빌드 후 Node로 JavaScript 실행 |
+| 웹 배포 | SvelteKit Node 어댑터 6 |
 | 문서 편집 화면 | `@rhwp/editor` 임베드 |
 | DB 접근 | SQLite + Drizzle ORM + `better-sqlite3` |
 | 파일 저장 | 서버 파일시스템 |
@@ -70,7 +74,7 @@ rhwp의 문서 편집 기능을 웹에 연결하고, 구성원이 직접 수정�
 
 DeepSeek Harness SDK는 별도 프로세스의 Harness에 세션과 프롬프트를 전달하고 실행 이벤트를 받을 수 있다. 이 연결을 Worker의 어댑터 안에 둔다. [공식 SDK 구조](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/sdk/README.md)
 
-Harness의 외부 모델 API 설정으로 OpenRouter를 연결하고, MCP 클라이언트로 rhwp 도구를 연결한다. 의존성 버전은 통합 검증 후 고정한다. [모델 API 설정](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/guide/providers.md), [MCP 클라이언트](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md)
+Harness의 외부 모델 API 설정으로 OpenRouter를 연결하고, MCP 클라이언트로 rhwp 도구를 연결한다. 설치 재현성을 위해 Harness와 SDK는 `0.2.2-rc.1`, rhwp 편집기는 `0.8.7`, Drizzle ORM은 `0.45.4`, `better-sqlite3`는 `13.0.3`으로 고정했다. 이는 통합 검증 완료를 뜻하지 않으며 2단계에서 실제 문서와 지정 모델·MCP·ARM64 환경을 확인한 뒤 검증한 버전을 기록한다. [모델 API 설정](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/guide/providers.md), [MCP 클라이언트](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md)
 
 ## 실행 구조
 
@@ -101,9 +105,16 @@ deepet-hwpx-cowork/
 ├── .gitattributes
 ├── .env.example
 ├── .gitignore
+├── .prettierrc.json
+├── .prettierignore
+├── components.json
 ├── package.json
 ├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
 ├── vite.config.ts
+├── vite.worker.config.ts
+├── vitest.config.ts
+├── playwright.config.ts
 ├── tsconfig.json
 ├── tsconfig.worker.json
 ├── drizzle.config.ts
@@ -119,6 +130,7 @@ deepet-hwpx-cowork/
 │   ├── hooks.server.ts
 │   ├── routes/
 │   │   ├── +layout.svelte
+│   │   ├── +page.svelte
 │   │   ├── +page.server.ts
 │   │   ├── (auth)/
 │   │   │   ├── login/
@@ -135,6 +147,7 @@ deepet-hwpx-cowork/
 │   │   └── api/
 │   │       ├── auth/
 │   │       ├── documents/
+│   │       │   └── [documentId]/
 │   │       ├── sessions/
 │   │       ├── attachments/
 │   │       ├── jobs/
@@ -149,6 +162,8 @@ deepet-hwpx-cowork/
 │       │   ├── chat/
 │       │   ├── versioning/
 │       │   └── jobs/
+│       ├── hooks/
+│       ├── utils.ts
 │       ├── client/
 │       │   ├── api.ts
 │       │   ├── events.ts
@@ -199,6 +214,7 @@ deepet-hwpx-cowork/
 │   └── harness/
 ├── migrations/
 ├── scripts/
+│   ├── probes/
 │   ├── create-admin.ts
 │   ├── backup.ts
 │   └── restore.ts
@@ -222,7 +238,9 @@ deepet-hwpx-cowork/
     └── harness/
 ```
 
-`data/`는 실행 데이터이며 소스 관리에서 제외한다. 배포 환경에서는 설정한 데이터 루트를 사용한다. API 키는 서버 환경 설정으로 공급하고 브라우저에 전달하지 않는다.
+로그인·초대·문서 목록·문서 상세·작업 목록·관리자 페이지 디렉터리에 빈 `+page.svelte`와 `+page.server.ts`를 두었다. API 묶음에는 빈 `+server.ts`를 두었으며, 위 트리에서 디렉터리만 정의한 영역은 빈 `.gitkeep`으로 보존한다. 설치된 UI 컴포넌트에는 실제 라이브러리 코드가 있고, 서비스 고유의 화면과 API 처리 내용은 비어 있다.
+
+`data/`는 이후 실행 코드가 생성할 운영 데이터이며 소스 관리에서 제외한다. 스캐폴드에는 `app.sqlite`를 비롯한 가짜 운영 파일을 만들지 않았다. 배포 환경에서는 설정한 데이터 루트를 사용한다. API 키는 서버 환경 설정으로 공급하고 브라우저에 전달하지 않는다. [.env.example](../.env.example)은 설정 항목의 예시이며 서버에서 읽기·검증하는 코드는 아직 구현하지 않았다.
 
 공개 소스 저장소는 [Longcat2957/hwpx-cowork](https://github.com/Longcat2957/hwpx-cowork)이며 `main` 브랜치를 기준으로 관리한다. 실제 서버 접속 정보는 Git에서 제외하는 `deployment/rpi_server.local.md`에 보관한다. 공통 운영 계획은 [라즈베리파이 문서](../deployment/rpi_server.md), 소스 관리 규칙은 [Git 설정 문서](git.md)를 따른다. 서비스 내부의 문서 브랜치는 SQLite와 파일 저장소로 관리한다.
 

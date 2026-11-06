@@ -1,16 +1,16 @@
 {
-  "extends": "$app/tsconfig",
-  "compilerOptions": {
-    "allowJs": true,
-    "checkJs": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "paths": {
-      "#lib": ["./src/lib"],
-      "#lib/*": ["./src/lib/*"]
-    }
-  },
-  "include": ["src", "*.ts", "*.js"],
-  "exclude": ["node_modules", "src/service-worker"]
+    "extends": "$app/tsconfig",
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "paths": {
+            "#lib": ["./src/lib"],
+            "#lib/*": ["./src/lib/*"]
+        }
+    },
+    "include": ["src", "*.ts", "*.js"],
+    "exclude": ["node_modules", "src/service-worker"]
 }

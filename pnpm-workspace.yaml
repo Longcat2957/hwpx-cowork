@@ -1,0 +1,16 @@
+allowBuilds:
+    '@deepseek-ai/dsh-subprocess-local': true
+    '@google/genai': false
+    esbuild: true
+    koffi: true
+    node-pty: true
+    protobufjs: false
+
+minimumReleaseAgeExclude:
+    - '@lucide/svelte@1.70.0'
+
+overrides:
+    '@opentelemetry/api': 1.9.1
+    # These UI dependencies use unchanged Runed APIs; 0.38 supports SvelteKit 3.
+    'runed@0.35.1': 0.38.0
+    'runed@0.37.1': 0.38.0
