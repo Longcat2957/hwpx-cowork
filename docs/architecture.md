@@ -10,6 +10,18 @@ AI 실행은 DeepSeek Harness가 담당하고, 모델 호출은 서버의 OpenRo
 
 현재는 필요한 의존성, 웹·Worker 개발 및 빌드 설정, 공백 4개 포맷터와 테스트 도구 설정을 준비했다. shadcn-svelte UI 63개 묶음과 `@lucide/svelte`를 설치했으며, 애플리케이션·Worker·운영 구조용 파일 81개는 모두 빈 파일로 만들었다. 아래 인증·문서 편집·AI 작업·DB·운영 동작은 구현 목표이며 아직 동작하지 않는다. 페이지와 API 파일도 비어 있고, 빈 Worker는 작업을 수행하지 않는다.
 
+이후 작업은 **프런트엔드 F1~F8을 먼저 구현·검토한 뒤 백엔드·실제 통합 B1~B10을 진행**한다. 기존 1~10단계의 서비스 요구와 완료 기준은 B1~B10으로 유지한다. 이번 변경은 순서와 개발 경계를 정하는 계획이며 프런트엔드 또는 mock 코드를 구현한 것은 아니다. 자세한 단계별 파일과 기준은 [세부 코드 작성 계획](implementation-plan.md)을 따른다.
+
+## 프런트엔드 우선 개발과 미리보기
+
+F1 기존 UI·공식 Blocks 조사 및 타입 계약·mock 데이터 → F2 공통 레이아웃·로그인·초대 → F3 문서 목록·업로드·생성 화면 → F4 문서 작업 공간·rhwp 브라우저 경계 → F5 대화·첨부·작업 진행 → F6 버전·복원·충돌 선택·대표 버전 → F7 관리자 구성원·설정 → F8 반응형·접근성·mock 전체 흐름 검토 순서로 진행한다.
+
+레이아웃은 설치된 컴포넌트와 공식 Blocks를 조사한 뒤 재사용한다. 공통 화면 후보로 `sidebar-07`과 `login-01`, 설치된 Sidebar·Breadcrumb·Sheet를 검토한다. 컴포넌트 63개 묶음 설치와 Blocks 설치는 구분하며, Blocks는 아직 설치하지 않았다.
+
+개발 미리보기의 데이터 흐름은 **화면 → 타입화된 gateway → 브라우저 컨텍스트별 mock → 예시 데이터·시나리오**다. 이 경로는 서비스 백엔드·DB·Worker·환경 변수 파일·OpenRouter 키 없이 화면을 검토하기 위한 개발 경로다. 화면에 미리보기·예시 데이터임을 표시하고 새로고침하면 정해진 초기 상태로 돌아간다. 서버 영속 저장이나 브라우저 종료 후 실제 작업 지속을 구현한 것으로 표시하지 않는다. 운영 HTTP 요청 실패를 mock 응답으로 자동 대체하지 않는다.
+
+F4는 기존 `@rhwp/editor`를 호스팅하는 화면과 브라우저 어댑터 경계를 준비한다. 독립 브라우저 실행에 필요한 Studio 런타임 조건이 허용하면 File/Blob으로 실제 열기·내보내기를 확인하고, 실행할 수 없으면 이유를 표시한다. 자체 HWP 편집기를 만들지 않으며 편집기 실행 제약과 관계없이 레이아웃을 검토할 수 있게 한다. HWP·HWPX 전체 형식의 열기·수정·저장, 실제 파일 보존과 서비스 연결은 B2·B5의 완료 기준으로 남긴다.
+
 ## 서비스가 담당하는 범위
 
 rhwp의 문서 편집 기능을 웹에 연결하고, 구성원이 직접 수정하거나 AI에 지시하는 화면을 제공한다. 이 프로젝트에서 개발할 중심 기능은 사내 사용자 관리, 문서 저장과 공유, 사용자별 브랜치, 세션 복원, AI 작업 실행과 결과 반영이다.
@@ -22,7 +34,7 @@ rhwp의 문서 편집 기능을 웹에 연결하고, 구성원이 직접 수정�
 | OpenRouter | 지정 DeepSeek 모델의 API 호출 |
 | SQLite와 파일 저장소 | 사용자·브랜치·작업 관계와 문서·첨부파일 보존 |
 
-각 구성 요소를 연결하는 실제 호환성은 코드 작성 계획의 2단계에서 검증한다. 기존 로컬 MCP 조작 확인은 출발점이며, 웹 편집·파일 저장·모델 도구 호출·ARM64 실행을 함께 확인한 결과를 남긴다.
+각 구성 요소를 연결하는 실제 호환성은 프런트엔드 검토 뒤 코드 작성 계획의 B2에서 검증한다. 기존 로컬 MCP 조작 확인은 출발점이며, 웹 편집·파일 저장·모델 도구 호출·ARM64 실행을 함께 확인한 결과를 남긴다. 아래 실행 구조는 최종 운영 구조이며 개발용 mock이 이를 대체하지 않는다.
 
 ## 승인된 요구사항
 
@@ -74,7 +86,7 @@ rhwp의 문서 편집 기능을 웹에 연결하고, 구성원이 직접 수정�
 
 DeepSeek Harness SDK는 별도 프로세스의 Harness에 세션과 프롬프트를 전달하고 실행 이벤트를 받을 수 있다. 이 연결을 Worker의 어댑터 안에 둔다. [공식 SDK 구조](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/sdk/README.md)
 
-Harness의 외부 모델 API 설정으로 OpenRouter를 연결하고, MCP 클라이언트로 rhwp 도구를 연결한다. 설치 재현성을 위해 Harness와 SDK는 `0.2.2-rc.1`, rhwp 편집기는 `0.8.7`, Drizzle ORM은 `0.45.4`, `better-sqlite3`는 `13.0.3`으로 고정했다. 이는 통합 검증 완료를 뜻하지 않으며 2단계에서 실제 문서와 지정 모델·MCP·ARM64 환경을 확인한 뒤 검증한 버전을 기록한다. [모델 API 설정](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/guide/providers.md), [MCP 클라이언트](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md)
+Harness의 외부 모델 API 설정으로 OpenRouter를 연결하고, MCP 클라이언트로 rhwp 도구를 연결한다. 설치 재현성을 위해 Harness와 SDK는 `0.2.2-rc.1`, rhwp 편집기는 `0.8.7`, Drizzle ORM은 `0.45.4`, `better-sqlite3`는 `13.0.3`으로 고정했다. 이는 통합 검증 완료를 뜻하지 않으며 B2에서 실제 문서와 지정 모델·MCP·ARM64 환경을 확인한 뒤 검증한 버전을 기록한다. [모델 API 설정](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/guide/providers.md), [MCP 클라이언트](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/mcp/mcp-client/README.md)
 
 ## 실행 구조
 
@@ -167,8 +179,17 @@ deepet-hwpx-cowork/
 │       ├── client/
 │       │   ├── api.ts
 │       │   ├── events.ts
-│       │   └── rhwp-bridge.ts
+│       │   ├── gateway.ts
+│       │   ├── rhwp-bridge.ts
+│       │   └── mock/
+│       │       ├── fixtures.ts
+│       │       ├── gateway.ts
+│       │       └── scenarios.ts
 │       ├── contracts/
+│       │   ├── auth.ts
+│       │   ├── member.ts
+│       │   ├── attachment.ts
+│       │   ├── settings.ts
 │       │   ├── document.ts
 │       │   ├── version.ts
 │       │   ├── session.ts
@@ -240,6 +261,8 @@ deepet-hwpx-cowork/
 
 로그인·초대·문서 목록·문서 상세·작업 목록·관리자 페이지 디렉터리에 빈 `+page.svelte`와 `+page.server.ts`를 두었다. API 묶음에는 빈 `+server.ts`를 두었으며, 위 트리에서 디렉터리만 정의한 영역은 빈 `.gitkeep`으로 보존한다. 설치된 UI 컴포넌트에는 실제 라이브러리 코드가 있고, 서비스 고유의 화면과 API 처리 내용은 비어 있다.
 
+위 목표 트리의 `src/lib/client/gateway.ts`, `src/lib/client/mock/`의 세 파일, `src/lib/contracts/auth.ts`, `member.ts`, `attachment.ts`, `settings.ts`는 F1에서 추가할 **제안 파일이며 아직 생성하지 않았다**. 기존 [api.ts](../src/lib/client/api.ts)는 후속 HTTP 구현, [events.ts](../src/lib/client/events.ts)는 이벤트 구독 인터페이스, 제안한 최상위 `gateway.ts`는 명시적인 개발 미리보기와 운영 클라이언트 생성 경계를 담당한다. mock 데이터와 실패·충돌·재연결 시나리오는 제안한 `mock/` 안에 모아 화면 코드와 분리한다.
+
 `data/`는 이후 실행 코드가 생성할 운영 데이터이며 소스 관리에서 제외한다. 스캐폴드에는 `app.sqlite`를 비롯한 가짜 운영 파일을 만들지 않았다. 배포 환경에서는 설정한 데이터 루트를 사용한다. API 키는 서버 환경 설정으로 공급하고 브라우저에 전달하지 않는다. [.env.example](../.env.example)은 설정 항목의 예시이며 서버에서 읽기·검증하는 코드는 아직 구현하지 않았다.
 
 공개 소스 저장소는 [Longcat2957/hwpx-cowork](https://github.com/Longcat2957/hwpx-cowork)이며 `main` 브랜치를 기준으로 관리한다. 실제 서버 접속 정보는 Git에서 제외하는 `deployment/rpi_server.local.md`에 보관한다. 공통 운영 계획은 [라즈베리파이 문서](../deployment/rpi_server.md), 소스 관리 규칙은 [Git 설정 문서](git.md)를 따른다. 서비스 내부의 문서 브랜치는 SQLite와 파일 저장소로 관리한다.
@@ -287,6 +310,8 @@ DB의 중심 테이블은 `users`, `invitations`, `auth_sessions`, `documents`, 
 - 들여쓰기는 공백 4개를 사용한다. `.editorconfig`와 `AGENTS.md`에 같은 규칙을 둔다.
 - 레이아웃·UI 구현 전에 설치된 shadcn-svelte 컴포넌트와 공식 컴포넌트·블록 목록을 확인한다. 내비게이션 바·사이드바·대시보드 같은 큰 구성도 기존 구현을 우선 재사용·조합하며, 제공 여부를 확인하기 전에 직접 만들지 않는다. 충족되지 않는 부분만 이유를 설명하고 최소한으로 작성한다.
 - 브라우저가 가져오는 코드는 `components/`, `client/`, `contracts/`를 사용한다. 인증·DB·비밀 설정은 `server/`에 둔다.
+- 프런트엔드 화면은 타입화된 gateway 계약을 사용하고 fixture에 직접 접근하지 않는다. `client/gateway.ts`는 클라이언트 생성, `client/api.ts`는 후속 HTTP 구현, `client/events.ts`는 이벤트 구독 인터페이스, `client/mock/`는 개발용 구현과 시나리오를 담당하도록 계획한다.
+- mock 상태는 브라우저 컨텍스트별로 분리하며 SSR 모듈의 변경 가능한 전역 상태를 공유하지 않는다. 예시 데이터는 새로고침 시 초기화하고, 실제 인증·저장·AI 실행·작업 지속 검증과 구분한다. 운영 API 실패 시 mock으로 자동 전환하지 않는다.
 - 웹 서버와 Worker가 공유하는 서버 코드는 SvelteKit 요청 객체나 전용 환경 모듈에 의존하지 않게 작성한다.
 - rhwp 브라우저 연결은 `rhwp-bridge.ts`, Harness 연결은 `worker/runtime/harness.ts`에 모은다.
 - `model-policy.ts`에서 모든 LLM 요청에 고정 모델을 적용한다. 요약과 보조 작업도 동일하며 다른 모델로 자동 전환하지 않는다.
