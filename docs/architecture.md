@@ -8,19 +8,21 @@ AI 실행은 DeepSeek Harness가 담당하고, 모델 호출은 서버의 OpenRo
 
 이 문서의 스캐폴드는 승인된 목표 구조다. 실제 코드 작성 순서와 완료 기준은 [세부 코드 작성 계획](implementation-plan.md)에 정리한다.
 
-현재는 필요한 의존성, 웹·Worker 개발 및 빌드 설정, 공백 4개 포맷터와 테스트 도구 설정을 준비했다. shadcn-svelte UI 63개 묶음과 `@lucide/svelte`를 설치했으며, 애플리케이션·Worker·운영 구조용 파일 81개는 모두 빈 파일로 만들었다. 아래 인증·문서 편집·AI 작업·DB·운영 동작은 구현 목표이며 아직 동작하지 않는다. 페이지와 API 파일도 비어 있고, 빈 Worker는 작업을 수행하지 않는다.
+초기 작업에서는 의존성·개발 설정과 빈 파일 81개를 준비했다. 현재는 F1의 타입 계약·앱별 mock gateway를 구현하고 상태 전환 단위 테스트 11개를 통과했다. F2~F7 화면의 주요 흐름을 데스크톱·모바일 Chromium에서 14개 검증으로 확인했다. F8의 실제 기기·한글 IME 수동 확인은 남아 있다. API·서버 인증·DB·서버 서비스·Worker·배포 파일은 초기 빈 상태를 유지한다. 실제 문서 저장·AI 실행·운영 동작은 아래 설계의 구현 목표다.
 
-이후 작업은 **프런트엔드 F1~F8을 먼저 구현·검토한 뒤 백엔드·실제 통합 B1~B10을 진행**한다. 기존 1~10단계의 서비스 요구와 완료 기준은 B1~B10으로 유지한다. 이번 변경은 순서와 개발 경계를 정하는 계획이며 프런트엔드 또는 mock 코드를 구현한 것은 아니다. 자세한 단계별 파일과 기준은 [세부 코드 작성 계획](implementation-plan.md)을 따른다.
+작업 순서는 **프런트엔드 F1~F8 검토 후 백엔드·실제 통합 B1~B10 진행**을 유지한다. 상세한 구현 상태와 남은 검증은 [세부 코드 작성 계획](implementation-plan.md)에 기록한다.
 
 ## 프런트엔드 우선 개발과 미리보기
 
-F1 기존 UI·공식 Blocks 조사 및 타입 계약·mock 데이터 → F2 공통 레이아웃·로그인·초대 → F3 문서 목록·업로드·생성 화면 → F4 문서 작업 공간·rhwp 브라우저 경계 → F5 대화·첨부·작업 진행 → F6 버전·복원·충돌 선택·대표 버전 → F7 관리자 구성원·설정 → F8 반응형·접근성·mock 전체 흐름 검토 순서로 진행한다.
+F1 UI 원본 확인·타입 계약·mock 기반을 완성하고, F2 공통 레이아웃·로그인·초대, F3 문서 목록·업로드·생성, F4 문서 작업 공간, F5 대화·첨부·작업, F6 버전·결과 선택, F7 구성원·설정 화면을 구현했다. 주요 화면의 자동 브라우저 검증 14개와 반응형 크기·입력 보존 확인을 통과했다. F8의 실제 기기·한글 IME 수동 확인은 남아 있다.
 
-레이아웃은 설치된 컴포넌트와 공식 Blocks를 조사한 뒤 재사용한다. 공통 화면 후보로 `sidebar-07`과 `login-01`, 설치된 Sidebar·Breadcrumb·Sheet를 검토한다. 컴포넌트 63개 묶음 설치와 Blocks 설치는 구분하며, Blocks는 아직 설치하지 않았다.
+공통 레이아웃과 로그인은 공식 [sidebar-07](https://shadcn-svelte.com/blocks/sidebar#sidebar-07)·[login-01](https://shadcn-svelte.com/blocks/login#login-01)의 원본 구성을 설치된 UI로 재사용했다. Blocks 전체를 CLI로 추가한 것은 아니다. Resizable 분할, Message·Bubble·MessageScroller·Attachment·Trace 대화, [sidebar-11](https://shadcn-svelte.com/blocks/sidebar#sidebar-11) 접기 패턴을 조합했다. 목록은 [Data Table 공식 가이드](https://shadcn-svelte.com/docs/components/data-table)에 따라 `@tanstack/svelte-table` 9.3.1을 추가하고 [공통 컴포넌트](../src/lib/components/common/data-table.svelte)로 구현했다.
 
-개발 미리보기의 데이터 흐름은 **화면 → 타입화된 gateway → 브라우저 컨텍스트별 mock → 예시 데이터·시나리오**다. 이 경로는 서비스 백엔드·DB·Worker·환경 변수 파일·OpenRouter 키 없이 화면을 검토하기 위한 개발 경로다. 화면에 미리보기·예시 데이터임을 표시하고 새로고침하면 정해진 초기 상태로 돌아간다. 서버 영속 저장이나 브라우저 종료 후 실제 작업 지속을 구현한 것으로 표시하지 않는다. 운영 HTTP 요청 실패를 mock 응답으로 자동 대체하지 않는다.
+개발 미리보기의 데이터 흐름은 **화면 → 타입화된 gateway → 앱별 mock 상태 → 예시 데이터·시나리오**다. [루트 레이아웃](../src/routes/+layout.svelte)이 `import.meta.env.DEV`에서만 gateway를 생성하고 [context.ts](../src/lib/client/context.ts)로 주입한다. 변경 가능한 SSR 전역 상태를 공유하지 않는다. 서비스 백엔드·DB·Worker·환경 변수 파일·OpenRouter 키 없이 검토할 수 있으며 새로고침하면 초기화한다. 운영 빌드는 백엔드 미연결 안내를 표시하고 mock 화면을 실행하지 않는다.
 
-F4는 기존 `@rhwp/editor`를 호스팅하는 화면과 브라우저 어댑터 경계를 준비한다. 독립 브라우저 실행에 필요한 Studio 런타임 조건이 허용하면 File/Blob으로 실제 열기·내보내기를 확인하고, 실행할 수 없으면 이유를 표시한다. 자체 HWP 편집기를 만들지 않으며 편집기 실행 제약과 관계없이 레이아웃을 검토할 수 있게 한다. HWP·HWPX 전체 형식의 열기·수정·저장, 실제 파일 보존과 서비스 연결은 B2·B5의 완료 기준으로 남긴다.
+시나리오는 `default`, `empty`, `loading`, `error`, `forbidden`, `conflict`, `disconnected`다. mock 작업은 수동 진행으로 상태를 바꾸는 동기 메모리 구현이며 실제 LLM·SSE 요청을 실행하지 않는다. 작업 소유자·관리자 검사, 수정 번호를 확인한 결과 선택, 대표 버전 경합, 직접 편집본·AI 결과와 기존 버전 보존을 구현했다. 이벤트 구독은 커서 이후 기록을 전달하고 중복을 제거하며 `setConnection`으로 연결 복구를 재현한다. 이는 서버 영속 저장·실제 권한 검증·브라우저 종료 후 작업 지속의 완료를 뜻하지 않는다. 운영 HTTP 실패 시 mock 자동 대체도 제공하지 않는다.
+
+[rhwp-bridge.ts](../src/lib/client/rhwp-bridge.ts)는 브라우저에서 SDK를 지연 로딩하고 명시적으로 전달한 같은 출처의 Studio에 연결한다. 호스트·연결 상태·오류 화면은 작성했지만 Studio 런타임은 아직 설정하지 않았다. 현재 문서 영역은 실제 HWP 렌더링이 아닌 읽기 전용 샘플 텍스트이며 자체 편집기나 가짜 다운로드를 제공하지 않는다. 실제 File/Blob 열기·내보내기와 HWP·HWPX 수정·저장·다시 열기는 미검증 상태로 B2·B5에서 확인한다.
 
 ## 서비스가 담당하는 범위
 
@@ -69,6 +71,8 @@ rhwp의 문서 편집 기능을 웹에 연결하고, 구성원이 직접 수정�
 | --- | --- |
 | 웹 화면과 API | 기존 SvelteKit 3·Svelte 5·TypeScript 유지 |
 | UI | Tailwind CSS 4·shadcn-svelte 63개 UI 묶음·`@lucide/svelte` |
+| 공통 목록 | `@tanstack/svelte-table` 9.3.1·공식 Data Table 가이드 기반 |
+| 개발 미리보기 | 앱별 Svelte context·동기 메모리 gateway·명시적 개발 환경 전용 |
 | Node 실행 환경 | Node.js 24.9 이상, DeepSeek Harness 실행 조건 반영 |
 | Worker 개발·빌드 | 개발은 `tsx watch`, 운영은 Vite SSR 빌드 후 Node로 JavaScript 실행 |
 | 웹 배포 | SvelteKit Node 어댑터 6 |
@@ -120,6 +124,8 @@ deepet-hwpx-cowork/
 ├── .prettierrc.json
 ├── .prettierignore
 ├── components.json
+├── .vscode/
+│   └── tasks.json
 ├── package.json
 ├── pnpm-lock.yaml
 ├── pnpm-workspace.yaml
@@ -168,6 +174,9 @@ deepet-hwpx-cowork/
 │   └── lib/
 │       ├── components/
 │       │   ├── ui/
+│       │   ├── common/
+│       │   │   ├── data-table.svelte
+│       │   │   └── view-state.svelte
 │       │   ├── shell/
 │       │   ├── documents/
 │       │   ├── editor/
@@ -178,6 +187,8 @@ deepet-hwpx-cowork/
 │       ├── utils.ts
 │       ├── client/
 │       │   ├── api.ts
+│       │   ├── context.ts
+│       │   ├── format.ts
 │       │   ├── events.ts
 │       │   ├── gateway.ts
 │       │   ├── rhwp-bridge.ts
@@ -259,9 +270,9 @@ deepet-hwpx-cowork/
     └── harness/
 ```
 
-로그인·초대·문서 목록·문서 상세·작업 목록·관리자 페이지 디렉터리에 빈 `+page.svelte`와 `+page.server.ts`를 두었다. API 묶음에는 빈 `+server.ts`를 두었으며, 위 트리에서 디렉터리만 정의한 영역은 빈 `.gitkeep`으로 보존한다. 설치된 UI 컴포넌트에는 실제 라이브러리 코드가 있고, 서비스 고유의 화면과 API 처리 내용은 비어 있다.
+로그인·초대·문서 목록·상세·작업 목록·관리자 페이지의 Svelte UI와 공통 레이아웃을 구현했다. 서버 페이지 처리와 API의 `+page.server.ts`, `+layout.server.ts`, `+server.ts`, 서버 서비스·DB·Worker·운영 실행 파일은 초기 스캐폴드 상태다. 아직 파일이 필요하지 않은 디렉터리는 `.gitkeep`으로 보존한다.
 
-위 목표 트리의 `src/lib/client/gateway.ts`, `src/lib/client/mock/`의 세 파일, `src/lib/contracts/auth.ts`, `member.ts`, `attachment.ts`, `settings.ts`는 F1에서 추가할 **제안 파일이며 아직 생성하지 않았다**. 기존 [api.ts](../src/lib/client/api.ts)는 후속 HTTP 구현, [events.ts](../src/lib/client/events.ts)는 이벤트 구독 인터페이스, 제안한 최상위 `gateway.ts`는 명시적인 개발 미리보기와 운영 클라이언트 생성 경계를 담당한다. mock 데이터와 실패·충돌·재연결 시나리오는 제안한 `mock/` 안에 모아 화면 코드와 분리한다.
+[gateway.ts](../src/lib/client/gateway.ts), [context.ts](../src/lib/client/context.ts), [mock/](../src/lib/client/mock/)와 인증·구성원·첨부·설정 계약은 실제 생성·구현했다. gateway는 타입 계약, context는 앱별 주입, mock은 fixture와 상태 전환을 담당한다. [api.ts](../src/lib/client/api.ts)는 후속 HTTP 연결용 빈 파일이며 [events.ts](../src/lib/client/events.ts)는 이벤트 커서 처리를 구현한다. [format.ts](../src/lib/client/format.ts)는 표시 형식을, [common/](../src/lib/components/common/)은 목록과 로딩·빈 상태·오류 UI를 공유한다.
 
 `data/`는 이후 실행 코드가 생성할 운영 데이터이며 소스 관리에서 제외한다. 스캐폴드에는 `app.sqlite`를 비롯한 가짜 운영 파일을 만들지 않았다. 배포 환경에서는 설정한 데이터 루트를 사용한다. API 키는 서버 환경 설정으로 공급하고 브라우저에 전달하지 않는다. [.env.example](../.env.example)은 설정 항목의 예시이며 서버에서 읽기·검증하는 코드는 아직 구현하지 않았다.
 
@@ -310,7 +321,7 @@ DB의 중심 테이블은 `users`, `invitations`, `auth_sessions`, `documents`, 
 - 들여쓰기는 공백 4개를 사용한다. `.editorconfig`와 `AGENTS.md`에 같은 규칙을 둔다.
 - 레이아웃·UI 구현 전에 설치된 shadcn-svelte 컴포넌트와 공식 컴포넌트·블록 목록을 확인한다. 내비게이션 바·사이드바·대시보드 같은 큰 구성도 기존 구현을 우선 재사용·조합하며, 제공 여부를 확인하기 전에 직접 만들지 않는다. 충족되지 않는 부분만 이유를 설명하고 최소한으로 작성한다.
 - 브라우저가 가져오는 코드는 `components/`, `client/`, `contracts/`를 사용한다. 인증·DB·비밀 설정은 `server/`에 둔다.
-- 프런트엔드 화면은 타입화된 gateway 계약을 사용하고 fixture에 직접 접근하지 않는다. `client/gateway.ts`는 클라이언트 생성, `client/api.ts`는 후속 HTTP 구현, `client/events.ts`는 이벤트 구독 인터페이스, `client/mock/`는 개발용 구현과 시나리오를 담당하도록 계획한다.
+- 프런트엔드 화면은 타입화된 gateway 계약을 사용하고 fixture에 직접 접근하지 않는다. `client/gateway.ts`는 타입 계약, `client/context.ts`는 앱별 주입, `client/api.ts`는 후속 HTTP 구현, `client/events.ts`는 이벤트 커서, `client/mock/`는 개발용 구현과 시나리오를 담당한다. mock 생성은 루트 레이아웃의 개발 환경 분기로 제한한다.
 - mock 상태는 브라우저 컨텍스트별로 분리하며 SSR 모듈의 변경 가능한 전역 상태를 공유하지 않는다. 예시 데이터는 새로고침 시 초기화하고, 실제 인증·저장·AI 실행·작업 지속 검증과 구분한다. 운영 API 실패 시 mock으로 자동 전환하지 않는다.
 - 웹 서버와 Worker가 공유하는 서버 코드는 SvelteKit 요청 객체나 전용 환경 모듈에 의존하지 않게 작성한다.
 - rhwp 브라우저 연결은 `rhwp-bridge.ts`, Harness 연결은 `worker/runtime/harness.ts`에 모은다.

@@ -62,6 +62,7 @@
         "@lucide/svelte": "^1.70.0",
         "@rhwp/editor": "0.8.7",
         "@shadcn-svelte/primitives": "^0.0.1",
+        "@tanstack/svelte-table": "9.3.1",
         "better-sqlite3": "13.0.3",
         "bits-ui": "^2.20.0",
         "cn": "^0.5.2",

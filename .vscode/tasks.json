@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "dev:web",
+            "type": "shell",
+            "command": "pnpm",
+            "args": ["dev:web", "--host", "0.0.0.0", "--port", "5173", "--strictPort"],
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                    "owner": "vite",
+                    "pattern": {
+                        "regexp": "^(.*):(\\d+):(\\d+): (.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "message": 4
+                    },
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".*VITE.*",
+                        "endsPattern": ".*Local:.*"
+                    }
+                }
+            ]
+        }
+    ]
+}
