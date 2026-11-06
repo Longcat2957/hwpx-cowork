@@ -1,0 +1,33 @@
+# Dependencies and generated output
+node_modules/
+.svelte-kit/
+build/
+dist/
+.pnpm-store/
+.pnpm-cache/
+.pnpm-state/
+.vercel/
+.netlify/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Server secrets and local deployment details
+.env
+.env.*
+!.env.example
+/deployment/*.local.md
+
+# Runtime documents, SQLite state, Harness sessions, and backups
+/data/
+/backups/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+
+# Local system files and logs
+.DS_Store
+Thumbs.db
+*.log
